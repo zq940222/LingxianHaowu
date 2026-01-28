@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: lingxian-postgres
+    environment:
+      POSTGRES_DB: lingxian_haowu
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - lingxian-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: lingxian-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - lingxian-network
+
+  # MinIO对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: lingxian-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - lingxian-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  lingxian-network:
+    driver: bridge

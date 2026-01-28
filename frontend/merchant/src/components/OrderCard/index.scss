@@ -1,0 +1,200 @@
+.order-card {
+  background-color: #fff;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f5f5f5;
+  }
+
+  &__order-info {
+    flex: 1;
+  }
+
+  &__order-no {
+    font-size: 26px;
+    color: #333;
+    font-weight: 500;
+  }
+
+  &__time {
+    display: block;
+    font-size: 22px;
+    color: #999;
+    margin-top: 8px;
+  }
+
+  &__status {
+    padding: 6px 16px;
+    border-radius: 20px;
+  }
+
+  &__status-text {
+    font-size: 22px;
+    color: #fff;
+  }
+
+  &__products {
+    margin-bottom: 20px;
+  }
+
+  &__product {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid #f5f5f5;
+    }
+  }
+
+  &__product-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  &__product-info {
+    flex: 1;
+    margin-left: 16px;
+    overflow: hidden;
+  }
+
+  &__product-name {
+    font-size: 26px;
+    color: #333;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__product-spec {
+    display: block;
+    font-size: 22px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  &__product-right {
+    text-align: right;
+    margin-left: 16px;
+  }
+
+  &__product-price {
+    font-size: 26px;
+    color: #333;
+  }
+
+  &__product-quantity {
+    display: block;
+    font-size: 22px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  &__more {
+    font-size: 24px;
+    color: #999;
+    text-align: center;
+    padding: 16px 0;
+  }
+
+  &__address {
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  &__address-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  &__address-label {
+    font-size: 22px;
+    color: #fff;
+    background-color: #1890ff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 12px;
+  }
+
+  &__address-name {
+    font-size: 26px;
+    color: #333;
+    font-weight: 500;
+    margin-right: 16px;
+  }
+
+  &__address-phone {
+    font-size: 24px;
+    color: #666;
+  }
+
+  &__address-detail {
+    font-size: 24px;
+    color: #666;
+    line-height: 1.4;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid #f5f5f5;
+  }
+
+  &__amount {
+    display: flex;
+    align-items: baseline;
+  }
+
+  &__amount-label {
+    font-size: 24px;
+    color: #666;
+  }
+
+  &__amount-value {
+    font-size: 32px;
+    color: #ff4d4f;
+    font-weight: 600;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 16px;
+  }
+
+  &__action {
+    padding: 12px 24px;
+    border-radius: 30px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+
+    &--primary {
+      background-color: #1890ff;
+      border-color: #1890ff;
+
+      .order-card__action-text {
+        color: #fff;
+      }
+    }
+  }
+
+  &__action-text {
+    font-size: 24px;
+    color: #666;
+  }
+}

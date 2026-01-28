@@ -1,0 +1,5 @@
+export * from './request'
+export * as merchantApi from './merchant'
+export * as orderApi from './order'
+export * as productApi from './product'
+export * as statisticsApi from './statistics'

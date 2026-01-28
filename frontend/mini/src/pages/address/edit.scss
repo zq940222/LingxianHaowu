@@ -1,0 +1,108 @@
+.address-edit {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-size: 28px;
+    color: #999;
+  }
+
+  &__form {
+    background-color: #fff;
+    margin: 16px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  &__field {
+    display: flex;
+    align-items: center;
+    padding: 24px;
+    border-bottom: 1px solid #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &--textarea {
+      align-items: flex-start;
+
+      .address-edit__input {
+        min-height: 80px;
+      }
+    }
+
+    &--switch {
+      justify-content: space-between;
+    }
+  }
+
+  &__label {
+    width: 160px;
+    font-size: 28px;
+    color: #333;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    flex: 1;
+    font-size: 28px;
+    color: #333;
+  }
+
+  &__picker {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__picker-text {
+    font-size: 28px;
+    color: #333;
+
+    &--placeholder {
+      color: #999;
+    }
+  }
+
+  &__picker-arrow {
+    font-size: 32px;
+    color: #999;
+  }
+
+  &__footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    background-color: #fff;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+  }
+
+  &__submit {
+    height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #07c160 0%, #10d876 100%);
+    border-radius: 44px;
+
+    &--disabled {
+      background: #ccc;
+    }
+  }
+
+  &__submit-text {
+    font-size: 30px;
+    font-weight: 500;
+    color: #fff;
+  }
+}

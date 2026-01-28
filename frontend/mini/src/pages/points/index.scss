@@ -1,0 +1,229 @@
+.points {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+
+  &__card {
+    background: linear-gradient(135deg, #07c160 0%, #10d876 100%);
+    padding: 48px 24px;
+    margin-bottom: 16px;
+  }
+
+  &__card-header {
+    margin-bottom: 32px;
+  }
+
+  &__card-label {
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.8);
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  &__card-value {
+    display: flex;
+    align-items: center;
+  }
+
+  &__card-icon {
+    font-size: 48px;
+    margin-right: 16px;
+  }
+
+  &__card-number {
+    font-size: 72px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  &__sign-in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  &__sign-in-info {
+    flex: 1;
+  }
+
+  &__sign-in-days {
+    font-size: 28px;
+    color: #fff;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  &__sign-in-tip {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  &__sign-in-btn {
+    padding: 16px 48px;
+    background-color: #fff;
+    border-radius: 32px;
+
+    &--disabled {
+      background-color: rgba(255, 255, 255, 0.5);
+
+      .points__sign-in-btn-text {
+        color: rgba(7, 193, 96, 0.5);
+      }
+    }
+  }
+
+  &__sign-in-btn-text {
+    font-size: 28px;
+    font-weight: 500;
+    color: #07c160;
+  }
+
+  &__tabs {
+    display: flex;
+    background-color: #fff;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  &__tab {
+    flex: 1;
+    height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+    &--active {
+      .points__tab-text {
+        color: #07c160;
+        font-weight: 500;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 48px;
+        height: 4px;
+        background-color: #07c160;
+        border-radius: 2px;
+      }
+    }
+  }
+
+  &__tab-text {
+    font-size: 30px;
+    color: #666;
+  }
+
+  &__content {
+    height: calc(100vh - 380px);
+    background-color: #fff;
+  }
+
+  &__record {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  &__record-info {
+    flex: 1;
+  }
+
+  &__record-type {
+    font-size: 28px;
+    color: #333;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  &__record-desc {
+    font-size: 24px;
+    color: #999;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  &__record-time {
+    font-size: 22px;
+    color: #ccc;
+  }
+
+  &__record-points {
+    font-size: 32px;
+    font-weight: 600;
+
+    &--plus {
+      color: #07c160;
+    }
+
+    &--minus {
+      color: #fa5151;
+    }
+  }
+
+  &__rules {
+    padding: 24px;
+  }
+
+  &__rule {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    background-color: #f9f9f9;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  &__rule-info {
+    flex: 1;
+  }
+
+  &__rule-type {
+    font-size: 28px;
+    color: #333;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  &__rule-desc {
+    font-size: 24px;
+    color: #999;
+  }
+
+  &__rule-points {
+    font-size: 32px;
+    font-weight: 600;
+    color: #ffa500;
+  }
+
+  &__loading {
+    padding: 32px;
+    text-align: center;
+  }
+
+  &__loading-text {
+    font-size: 26px;
+    color: #999;
+  }
+
+  &__no-more {
+    padding: 32px;
+    text-align: center;
+  }
+
+  &__no-more-text {
+    font-size: 24px;
+    color: #ccc;
+  }
+}

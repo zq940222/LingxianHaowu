@@ -1,0 +1,47 @@
+.stat-card {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  &__icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    flex-shrink: 0;
+  }
+
+  &__icon-text {
+    font-size: 36px;
+  }
+
+  &__content {
+    flex: 1;
+  }
+
+  &__value {
+    font-size: 48px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  &__title {
+    display: block;
+    font-size: 24px;
+    color: #666;
+    margin-top: 8px;
+  }
+
+  &__sub-value {
+    display: block;
+    font-size: 22px;
+    color: #999;
+    margin-top: 4px;
+  }
+}

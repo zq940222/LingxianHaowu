@@ -76,7 +76,7 @@ async def login(
     return success_response(
         data={
             "token": token,
-            "user": user
+            "user": UserResponse.model_validate(user)
         }
     )
 

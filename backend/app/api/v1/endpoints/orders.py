@@ -3,7 +3,7 @@
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
@@ -52,6 +52,104 @@ class OrderUpdateStatusRequest(BaseModel):
     """更新订单状态请求"""
     status: str
     remark: Optional[str] = None
+
+
+class OrderPreviewRequest(BaseModel):
+    """订单预览请求（不落库，仅计算金额）"""
+    delivery_type: int  # 1-配送 2-自提
+    address_id: Optional[int] = None
+    pickup_point_id: Optional[int] = None
+    items: List[dict]  # [{product_id, quantity}]
+    coupon_id: Optional[int] = None
+    points_used: int = 0
+
+
+@router.post("/preview")
+async def preview_order(
+    request: OrderPreviewRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    """订单预览：计算金额（不创建订单）"""
+    # 1. 验证配送方式
+    if request.delivery_type == 1 and not request.address_id:
+        return error_response(message="配送类型需选择收货地址")
+    if request.delivery_type == 2 and not request.pickup_point_id:
+        return error_response(message="自提类型需选择自提点")
+
+    # 2. 计算商品金额
+    total_amount = 0.0
+    for item in request.items:
+        product_obj = await product_service.get(db, item["product_id"])
+        if not product_obj:
+            return error_response(message=f"商品不存在: {item['product_id']}")
+        subtotal = float(product_obj.price) * item["quantity"]
+        total_amount += subtotal
+
+    # 3. 优惠（暂不实现，返回0）
+    discount_amount = 0.0
+    points_discount = 0.0
+
+    # 4. 配送费
+    freight_amount = 0.0
+    if request.delivery_type == 1 and request.address_id:
+        from app.services.user_service import address as address_service
+        addr = await address_service.get(db, request.address_id)
+        if addr and getattr(addr, "zone_id", None):
+            freight_amount = await delivery_zone.calculate_delivery_fee(
+                db, addr.zone_id, total_amount
+            )
+
+    pay_amount = total_amount - discount_amount - points_discount + freight_amount
+    if pay_amount < 0:
+        pay_amount = 0.0
+
+    return success_response(
+        data={
+            "total_amount": round(total_amount, 2),
+            "freight_amount": round(freight_amount, 2),
+            "discount_amount": round(discount_amount, 2),
+            "points_discount": round(points_discount, 2),
+            "pay_amount": round(pay_amount, 2),
+            "available_coupons": 0,
+        }
+    )
+
+
+@router.get("/status-count")
+async def get_order_status_count(
+    db: AsyncSession = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    """订单状态数量统计（用于“我的”页角标）
+
+    由于后端订单状态枚举与前端展示状态不完全一致，这里做一个简单映射：
+    - pending -> pending_payment
+    - paid/preparing/ready -> pending_delivery
+    - delivering -> delivering
+    - 其余 -> 0
+    """
+    result = await db.execute(
+        select(Order.status, func.count(Order.id))
+        .where(Order.user_id == current_user_id)
+        .group_by(Order.status)
+    )
+    rows = result.all()
+    counts = {status: int(cnt) for status, cnt in rows}
+
+    pending_payment = counts.get("pending", 0)
+    pending_delivery = counts.get("paid", 0) + counts.get("preparing", 0) + counts.get("ready", 0)
+    delivering = counts.get("delivering", 0)
+    pending_pickup = 0
+
+    return success_response(
+        data={
+            "pending_payment": pending_payment,
+            "pending_delivery": pending_delivery,
+            "delivering": delivering,
+            "pending_pickup": pending_pickup,
+        }
+    )
 
 
 @router.post("/")

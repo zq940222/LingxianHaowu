@@ -14,7 +14,21 @@ export function createOrder(data: {
   remark?: string
   use_points?: number
 }) {
-  return post<{ order_id: number; order_no: string }>('/orders', data, { showLoading: true })
+  // 后端标准：delivery_type 1=配送 2=自提；delivery_time_slot 字段名不同
+  return post<{ order_id: number; order_no: string; final_amount?: number }>(
+    '/orders',
+    {
+      delivery_type: data.delivery_type === 'delivery' ? 1 : 2,
+      address_id: data.address_id,
+      pickup_point_id: data.pickup_point_id,
+      delivery_time_slot: data.delivery_time,
+      items: data.items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+      coupon_id: data.coupon_id,
+      points_used: data.use_points || 0,
+      remark: data.remark,
+    },
+    { showLoading: true }
+  )
 }
 
 /**
@@ -74,14 +88,42 @@ export function previewOrder(data: {
     points_discount: number
     pay_amount: number
     available_coupons: number
-  }>('/orders/preview', data)
+  }>('/orders/preview', {
+    delivery_type: data.delivery_type === 'delivery' ? 1 : 2,
+    address_id: data.address_id,
+    pickup_point_id: data.pickup_point_id,
+    items: data.items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+    coupon_id: data.coupon_id,
+    points_used: data.use_points || 0,
+  })
 }
 
 /**
  * 获取配送时间段
  */
 export function getDeliveryTimeSlots(address_id?: number) {
-  return get<DeliveryTimeSlot[]>('/delivery/time-slots', { address_id })
+  // 后端标准：POST /delivery/time-slots，body 需要 date
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const date = `${y}-${m}-${d}`
+
+  return post<{
+    date: string
+    zone_id?: number
+    time_slots: { id: number; label: string; available: boolean }[]
+  }>('/delivery/time-slots', { date, zone_id: undefined }).then((res) => {
+    const slots = (res.time_slots || []).map((t) => {
+      const [start, end] = String(t.label || '').split('-')
+      return {
+        start: start || t.label,
+        end: end || '',
+        available: !!t.available,
+      }
+    })
+    return [{ date: res.date || date, slots }]
+  })
 }
 
 /**
@@ -107,19 +149,29 @@ export function getOrderStatusCount() {
  * 发起支付
  */
 export function createPayment(orderId: number) {
+  // 后端标准：POST /payments/wx-pay
   return post<{
-    appId: string
-    timeStamp: string
-    nonceStr: string
-    package: string
-    signType: string
-    paySign: string
-  }>(`/orders/${orderId}/pay`, {}, { showLoading: true })
+    payment_id: number
+    prepay_id: string
+    payment_params: {
+      timeStamp: string
+      nonceStr: string
+      package: string
+      signType: string
+      paySign: string
+    }
+  }>('/payments/wx-pay', { order_id: orderId }, { showLoading: true }).then((res) => {
+    return {
+      appId: '',
+      ...res.payment_params,
+    }
+  })
 }
 
 /**
  * 查询支付状态
  */
 export function getPaymentStatus(orderId: number) {
+  // 暂无后端对应订单支付状态接口，后续统一为 /payments/{id}/status 或 /orders/{id}
   return get<{ paid: boolean; status: string }>(`/orders/${orderId}/payment-status`)
 }

@@ -44,54 +44,60 @@ def get_password_hash(password: str) -> str:
     ).decode('utf-8')
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    data: Optional[dict] = None,
+    expires_delta: Optional[timedelta] = None,
+    user_id: Optional[int] = None,
+) -> str:
+    """创建访问Token（兼容两种调用方式）
+
+    历史代码里有两种常见写法：
+    - create_access_token({"sub": "1", ...})
+    - create_access_token(user_id=1)
+
+    为了让项目“能跑起来”，这里做向后兼容。
     """
-    创建访问Token
-    
-    Args:
-        data: 要编码的数据
-        expires_delta: 过期时间增量
-    
-    Returns:
-        str: JWT Token
-    """
-    to_encode = data.copy()
-    
+    if data is None:
+        data = {}
+
+    to_encode = dict(data)
+
+    # 兼容：直接传 user_id
+    if user_id is not None and "sub" not in to_encode:
+        to_encode["sub"] = str(user_id)
+        to_encode["user_id"] = user_id
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
-    
+
     encoded_jwt = jwt.encode(
         to_encode,
         settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        algorithm=settings.JWT_ALGORITHM,
     )
-    
+
     return encoded_jwt
 
 
 def decode_access_token(token: str) -> Optional[dict]:
-    """
-    解码访问Token
-
-    Args:
-        token: JWT Token
-
-    Returns:
-        Optional[dict]: 解码后的数据，失败返回None
-    """
+    """解码访问Token"""
     try:
         payload = jwt.decode(
             token,
             settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            algorithms=[settings.JWT_ALGORITHM],
         )
         return payload
     except JWTError:
         return None
+
+
+# 兼容旧调用名
+decode_token = decode_access_token
 
 
 # HTTP Bearer token scheme

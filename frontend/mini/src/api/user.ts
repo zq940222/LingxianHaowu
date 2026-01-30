@@ -5,7 +5,13 @@ import type { User, Address, SignInRecord, PointsRecord, PaginatedData } from '@
  * 微信登录
  */
 export function wxLogin(code: string) {
-  return post<{ token: string; user: User }>('/user/wx-login', { code })
+  // 后端统一标准：/api/v1/auth/login
+  // 目前先用默认昵称/头像占位，后续再接入获取微信用户信息
+  return post<{ token: string; user: User }>('/auth/login', {
+    code,
+    nickname: '微信用户',
+    avatar: '',
+  })
 }
 
 /**

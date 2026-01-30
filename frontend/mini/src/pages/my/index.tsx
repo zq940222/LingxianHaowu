@@ -58,7 +58,9 @@ export default function MyPage() {
 
   const handleOrderClick = (status?: string) => {
     if (!isLoggedIn) {
-      Taro.showToast({ title: '请先登录', icon: 'none' })
+      // 回跳到订单列表
+      const target = `${PAGES.ORDER_LIST}${status ? `?status=${status}` : ''}`
+      Taro.navigateTo({ url: `${PAGES.LOGIN}?redirectTo=${encodeURIComponent(target)}` })
       return
     }
     Taro.navigateTo({
@@ -68,7 +70,7 @@ export default function MyPage() {
 
   const handleMenuClick = (path: string) => {
     if (!isLoggedIn) {
-      Taro.showToast({ title: '请先登录', icon: 'none' })
+      Taro.navigateTo({ url: `${PAGES.LOGIN}?redirectTo=${encodeURIComponent(path)}` })
       return
     }
     Taro.navigateTo({ url: path })

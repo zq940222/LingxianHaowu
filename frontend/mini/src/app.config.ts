@@ -10,6 +10,7 @@ export default defineAppConfig({
     'pages/order/list',
     'pages/order/detail',
     'pages/my/index',
+    'pages/login/index',
     'pages/address/list',
     'pages/address/edit',
     'pages/points/index',

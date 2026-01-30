@@ -67,6 +67,7 @@ export const PAGES = {
   ORDER_LIST: '/pages/order/list',
   ORDER_DETAIL: '/pages/order/detail',
   MY: '/pages/my/index',
+  LOGIN: '/pages/login/index',
   ADDRESS_LIST: '/pages/address/list',
   ADDRESS_EDIT: '/pages/address/edit',
   POINTS: '/pages/points/index',

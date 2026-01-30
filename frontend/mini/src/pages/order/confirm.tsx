@@ -4,6 +4,8 @@ import Taro, { useLoad } from '@tarojs/taro'
 import { AddressSelector, CouponCard, Loading } from '@/components'
 import { orderApi, activityApi } from '@/api'
 import { useUserStore, useCartStore } from '@/stores'
+import { useAuth } from '@/hooks'
+import { getCurrentPageUrl } from '@/utils/route'
 import { formatPriceYuan, formatAddress } from '@/utils/format'
 import { PAGES, PLACEHOLDER_IMAGE, DELIVERY_TYPES } from '@/constants'
 import type { Address, CartItem, UserCoupon, PickupPoint, DeliveryTimeSlot } from '@/types'
@@ -34,8 +36,13 @@ export default function OrderConfirm() {
 
   const { defaultAddress, fetchAddresses } = useUserStore()
   const { getSelectedItems } = useCartStore()
+  const { checkLogin } = useAuth()
 
   useLoad(async () => {
+    // 未登录：去登录页并回跳到订单确认页
+    const ok = checkLogin(undefined, getCurrentPageUrl())
+    if (!ok) return
+
     // 获取订单商品
     const storedItems = Taro.getStorageSync('orderItems')
     const cartItems = getSelectedItems()
@@ -120,6 +127,10 @@ export default function OrderConfirm() {
   }
 
   const handleSubmitOrder = async () => {
+    // 双保险：提交订单时再次校验登录，并回跳当前页
+    const ok = checkLogin(undefined, getCurrentPageUrl())
+    if (!ok) return
+
     if (deliveryType === 'delivery' && !selectedAddress) {
       Taro.showToast({ title: '请选择收货地址', icon: 'none' })
       return

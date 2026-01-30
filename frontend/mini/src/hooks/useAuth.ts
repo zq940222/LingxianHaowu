@@ -2,6 +2,7 @@ import React, { useCallback } from 'react'
 import Taro from '@tarojs/taro'
 import { useUserStore } from '@/stores'
 import { PAGES } from '@/constants'
+import { getCurrentPageUrl } from '@/utils/route'
 
 /**
  * 登录认证Hook
@@ -13,11 +14,14 @@ export function useAuth() {
    * 检查登录状态，未登录则跳转登录
    */
   const checkLogin = useCallback(
-    (callback?: () => void) => {
+    (callback?: () => void, redirectTo?: string) => {
       if (isLoggedIn) {
         callback?.()
         return true
       }
+
+      const currentUrl = redirectTo || getCurrentPageUrl()
+      const loginUrl = `${PAGES.LOGIN}${currentUrl ? `?redirectTo=${encodeURIComponent(currentUrl)}` : ''}`
 
       Taro.showModal({
         title: '提示',
@@ -25,7 +29,7 @@ export function useAuth() {
         confirmText: '去登录',
         success: (res) => {
           if (res.confirm) {
-            Taro.navigateTo({ url: PAGES.MY })
+            Taro.navigateTo({ url: loginUrl })
           }
         },
       })
@@ -38,9 +42,9 @@ export function useAuth() {
    * 需要登录的操作装饰器
    */
   const withAuth = useCallback(
-    <T extends (...args: any[]) => any>(fn: T) => {
+    <T extends (...args: any[]) => any>(fn: T, redirectTo?: string) => {
       return (...args: Parameters<T>) => {
-        if (checkLogin()) {
+        if (checkLogin(undefined, redirectTo)) {
           return fn(...args)
         }
       }

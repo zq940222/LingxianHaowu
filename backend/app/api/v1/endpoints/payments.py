@@ -11,6 +11,7 @@ import json
 
 from app.core.database import get_db
 from app.core.response import success_response, error_response
+from app.core.config import settings
 from app.services.payment_service import payment
 from app.services.order_service import order as order_service
 from app.models.payment import Payment
@@ -106,11 +107,23 @@ async def create_wx_payment(
         "paySign": "mock_pay_sign"  # 实际需要使用微信支付私钥签名
     }
 
+    # MOCK：开发阶段默认当作支付成功（你要求“支付默认成功”）
+    if settings.DEBUG:
+        mock_txn = f"mock_txn_{prepay_id}"
+        await payment.handle_payment_success(db, payment_obj, mock_txn)
+
+        # 同步更新订单状态
+        if order_obj.status == "pending":
+            await order_service.update_order_status(
+                db, order_obj, "paid", operator="系统", remark="模拟支付成功"
+            )
+
     return success_response(
         data={
             "payment_id": payment_obj.id,
             "prepay_id": prepay_id,
-            "payment_params": payment_params
+            "payment_params": payment_params,
+            "mock": settings.DEBUG,
         },
         message="支付订单创建成功"
     )

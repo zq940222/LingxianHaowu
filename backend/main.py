@@ -14,10 +14,10 @@ from app.api import api_router
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时执行
-    print("FastAPI应用启动")
+    print("FastAPI started")
     yield
     # 关闭时执行
-    print("FastAPI应用关闭")
+    print("FastAPI stopped")
 
 
 # 创建FastAPI应用

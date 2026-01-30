@@ -174,6 +174,15 @@ export default function OrderConfirm() {
           })
         },
         fail: () => {
+          // 开发阶段：支付走 mock，默认按“成功”处理，保证下单链路可跑通
+          if (process.env.NODE_ENV === 'development') {
+            Taro.showToast({ title: '模拟支付成功', icon: 'none' })
+            Taro.redirectTo({
+              url: `${PAGES.ORDER_RESULT}?status=success&orderId=${res.order_id}`,
+            })
+            return
+          }
+
           Taro.redirectTo({
             url: `${PAGES.ORDER_RESULT}?status=fail&orderId=${res.order_id}`,
           })

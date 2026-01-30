@@ -297,7 +297,13 @@ export default function OrderConfirm() {
       {/* 配送时间 */}
       <View
         className='order-confirm__cell'
-        onClick={() => setShowTimeSelector(true)}
+        onClick={() => {
+          if (timeSlots.length === 0) {
+            Taro.showToast({ title: '暂无可选时间', icon: 'none' })
+            return
+          }
+          setShowTimeSelector(true)
+        }}
       >
         <Text className='order-confirm__cell-label'>配送时间</Text>
         <Text className='order-confirm__cell-value'>
@@ -389,6 +395,71 @@ export default function OrderConfirm() {
         onSelect={setSelectedAddress}
         onClose={() => setShowAddressSelector(false)}
       />
+
+      {/* 配送时间选择弹窗 */}
+      {showTimeSelector && (
+        <View className='order-confirm__coupon-popup'>
+          <View
+            className='order-confirm__coupon-popup-mask'
+            onClick={() => setShowTimeSelector(false)}
+          />
+          <View className='order-confirm__coupon-popup-content'>
+            <View className='order-confirm__coupon-popup-header'>
+              <Text className='order-confirm__coupon-popup-title'>选择配送时间</Text>
+              <View
+                className='order-confirm__coupon-popup-close'
+                onClick={() => setShowTimeSelector(false)}
+              >
+                <Text className='order-confirm__coupon-popup-close-icon'>×</Text>
+              </View>
+            </View>
+
+            <View className='order-confirm__coupon-popup-list'>
+              {timeSlots.length === 0 ? (
+                <View className='order-confirm__coupon-popup-empty'>
+                  <Text>暂无可选时间</Text>
+                </View>
+              ) : (
+                timeSlots.map((day) => (
+                  <View key={day.date} style={{ marginBottom: '16rpx' }}>
+                    <View style={{ padding: '8rpx 0', color: '#666', fontSize: '26rpx' }}>
+                      <Text>{day.date}</Text>
+                    </View>
+                    {day.slots.map((slot) => {
+                      const label = `${day.date} ${slot.start}-${slot.end}`
+                      const disabled = !slot.available
+                      const selected = selectedTime === label
+                      return (
+                        <View
+                          key={`${day.date}-${slot.start}-${slot.end}`}
+                          className='order-confirm__cell'
+                          style={{
+                            marginTop: '12rpx',
+                            opacity: disabled ? 0.5 : 1,
+                            background: selected ? '#eafaf0' : '#fff',
+                          }}
+                          onClick={() => {
+                            if (disabled) return
+                            setSelectedTime(label)
+                            setShowTimeSelector(false)
+                          }}
+                        >
+                          <Text className='order-confirm__cell-label'>时间段</Text>
+                          <Text className='order-confirm__cell-value'>
+                            {slot.start}-{slot.end}
+                            {!slot.available ? '（不可选）' : ''}
+                          </Text>
+                          <Text className='order-confirm__cell-arrow'>›</Text>
+                        </View>
+                      )
+                    })}
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* 优惠券选择弹窗 */}
       {showCouponSelector && (

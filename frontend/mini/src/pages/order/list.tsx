@@ -12,7 +12,7 @@ import './list.scss'
 const STATUS_TABS = [
   { label: '全部', value: '' },
   { label: '待付款', value: 'pending_payment' },
-  { label: '待配送', value: 'pending_delivery,pending_pickup' },
+  { label: '待配送', value: 'pending_delivery' },
   { label: '配送中', value: 'delivering' },
   { label: '已完成', value: 'completed' },
 ]

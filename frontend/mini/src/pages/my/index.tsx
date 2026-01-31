@@ -11,12 +11,14 @@ interface OrderStatusCount {
   pending_payment: number
   pending_delivery: number
   delivering: number
-  pending_pickup: number
+  // 兼容后端返回（目前固定为0）
+  pending_pickup?: number
 }
 
 const ORDER_STATUS_ENTRIES = [
   { key: 'pending_payment', label: '待付款', icon: '💳', status: 'pending_payment' },
-  { key: 'pending_delivery', label: '待配送', icon: '📦', status: 'pending_delivery,pending_pickup' },
+  // 后端已将 paid/preparing/ready 聚合到 pending_delivery，这里不再拼接 pending_pickup
+  { key: 'pending_delivery', label: '待配送', icon: '📦', status: 'pending_delivery' },
   { key: 'delivering', label: '配送中', icon: '🚚', status: 'delivering' },
 ]
 

@@ -29,7 +29,8 @@ export const ORDER_STATUS_MAP: Record<string, { text: string; color: string }> =
 export const ORDER_STATUS_TABS = [
   { label: '全部', value: '' },
   { label: '待付款', value: 'pending_payment' },
-  { label: '待配送', value: 'pending_delivery,pending_pickup' },
+  // 后端已将 paid/preparing/ready 聚合到 pending_delivery
+  { label: '待配送', value: 'pending_delivery' },
   { label: '配送中', value: 'delivering' },
   { label: '已完成', value: 'completed' },
 ]

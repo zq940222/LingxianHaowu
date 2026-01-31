@@ -55,7 +55,7 @@ class OrderUpdateStatusRequest(BaseModel):
 
 
 class OrderRefundRequest(BaseModel):
-    """用户申请退款（简化版）"""
+    """用户申请退款"""
     reason: str
     description: Optional[str] = None
 
@@ -489,10 +489,9 @@ async def request_refund(
     db: AsyncSession = Depends(get_db),
     current_user_id: int = Depends(get_current_user_id)
 ):
-    """用户申请退款（简化版）
+    """用户申请退款（两段式）
 
-    说明：当前项目未对接真实微信退款流程，这里按“申请->立即退款成功”模拟。
-    后续接入真实退款后，可保留 order.status=refunding，等待回调变更为 refunded。
+    申请后进入 refunding，等待管理员确认/第三方回调后再进入 refunded。
     """
     from app.services.payment_service import payment as payment_service
 
@@ -513,26 +512,14 @@ async def request_refund(
     if payment_obj.status != "paid":
         return error_response(message="当前支付状态不允许退款")
 
-    # 1) 先进入退款中
+    # 1) 订单进入退款中
     await order.update_order_status(
         db, order_obj, "refunding", operator="用户", remark=f"申请退款: {request.reason}"
     )
 
-    # 2) 立即退款成功（模拟）
+    # 2) 支付进入退款中（记录退款原因/金额）
     refund_amount = float(payment_obj.amount)
-    await payment_service.refund(db, payment_obj, refund_amount, request.reason)
-    await order.update_order_status(
-        db, order_obj, "refunded", operator="系统", remark=f"退款成功: {request.reason}"
-    )
-
-    # 3) 恢复库存
-    items, _ = await order_item.get_order_items(db, order_id)
-    for item in items:
-        prod = await product_service.get(db, item.product_id)
-        if prod:
-            prod.stock += item.quantity
-            db.add(prod)
-    await db.commit()
+    await payment_service.request_refund(db, payment_obj, refund_amount, request.reason)
 
     return success_response(message="退款申请已提交")
 
@@ -665,6 +652,49 @@ async def get_all_orders(
             "pages": (total + size - 1) // size
         }
     )
+
+
+@router.post("/admin/{order_id}/refund/confirm")
+async def admin_confirm_refund(
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin_id: int = Depends(get_admin_id)
+):
+    """管理员确认退款成功
+
+    - order: refunding -> refunded
+    - payment: refunding -> refunded
+    - 恢复库存
+    """
+    from app.services.payment_service import payment as payment_service
+
+    order_obj = await order.get(db, order_id)
+    if not order_obj:
+        return error_response(message="订单不存在")
+
+    if order_obj.status != "refunding":
+        return error_response(message="当前订单不处于退款中")
+
+    payment_obj = await payment_service.get_by_field(db, field_name="order_id", field_value=order_id)
+    if not payment_obj:
+        return error_response(message="支付记录不存在")
+
+    if payment_obj.status != "refunding":
+        return error_response(message="当前支付不处于退款中")
+
+    await payment_service.confirm_refund(db, payment_obj)
+    await order.update_order_status(db, order_obj, "refunded", operator="管理员", remark="确认退款")
+
+    # 恢复库存
+    items, _ = await order_item.get_order_items(db, order_id)
+    for item in items:
+        prod = await product_service.get(db, item.product_id)
+        if prod:
+            prod.stock += item.quantity
+            db.add(prod)
+    await db.commit()
+
+    return success_response(message="退款已确认")
 
 
 @router.put("/admin/{order_id}/status")

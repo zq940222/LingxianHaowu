@@ -305,31 +305,22 @@ async def create_refund(
     # TODO: 实际项目中需要调用微信退款API
     # refund_result = wxpay.refund(...)
 
-    # 5. 更新支付记录
-    await payment.refund(
+    # 5. 更新支付记录（进入 refunding）
+    await payment.request_refund(
         db, payment_obj, request.refund_amount, request.refund_reason
     )
 
-    # 6. 更新订单状态
+    # 6. 更新订单状态（进入 refunding）
     await order_service.update_order_status(
-        db, order_obj, "refunded", operator="用户", remark=f"退款: {request.refund_reason}"
+        db, order_obj, "refunding", operator="用户", remark=f"申请退款: {request.refund_reason}"
     )
 
-    # 7. 恢复库存
-    from app.services.product_service import product as product_service
-    from app.services.order_service import order_item
-    items, _ = await order_item.get_order_items(db, request.order_id)
-    for item in items:
-        prod = await product_service.get(db, item.product_id)
-        if prod:
-            prod.stock += item.quantity
-            db.add(prod)
-    await db.commit()
+    # 7. 这里不立即恢复库存，等待管理员确认退款成功后处理
 
     return success_response(
         data={
             "refund_amount": request.refund_amount,
-            "refund_status": "success"
+            "refund_status": "refunding"
         },
         message="退款申请已提交"
     )

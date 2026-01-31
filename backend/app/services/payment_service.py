@@ -53,29 +53,29 @@ class CRUDPayment(CRUDBase[Payment, PaymentCreate, PaymentUpdate]):
         await db.refresh(payment)
         return payment
 
-    async def refund(
+    async def request_refund(
         self,
         db: AsyncSession,
         payment: Payment,
         refund_amount: float,
         refund_reason: str
     ) -> Payment:
-        """处理退款（简化版）
+        """发起退款申请（进入 refunding）
 
-        当前未接入真实第三方退款回调：
-        - 先标记 refunding
-        - 立即标记 refunded
-
-        后续接入真实回调后，可保留 refunding 状态等待异步更新。
+        说明：真实业务一般是“申请退款 -> 退款中(refunding) -> 退款成功(refunded)”
+        这里先把状态置为 refunding，等待管理员确认或第三方回调。
         """
         payment.status = "refunding"
+        payment.refund_amount = refund_amount
+        payment.refund_reason = refund_reason
         db.add(payment)
         await db.commit()
         await db.refresh(payment)
+        return payment
 
+    async def confirm_refund(self, db: AsyncSession, payment: Payment) -> Payment:
+        """确认退款成功（进入 refunded）"""
         payment.status = "refunded"
-        payment.refund_amount = refund_amount
-        payment.refund_reason = refund_reason
         payment.refunded_at = datetime.utcnow()
         db.add(payment)
         await db.commit()

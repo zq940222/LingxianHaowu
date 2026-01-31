@@ -84,11 +84,20 @@ export interface Order {
   id: number
   order_no: string
   user_id: number
+
+  // 金额字段：兼容后端 current schema(final_amount/delivery_fee) 与旧字段(pay_amount/freight_amount)
   total_amount: number
-  pay_amount: number
-  freight_amount: number
   discount_amount: number
-  status: OrderStatus
+  delivery_fee?: number
+  final_amount?: number
+  pay_amount?: number
+  freight_amount?: number
+
+  // 后端细粒度状态 + 前端聚合展示状态
+  status: string
+  display_status?: OrderStatus
+  display_status_name?: string
+
   delivery_type: 'delivery' | 'pickup'
   address?: Address
   pickup_point_id?: number

@@ -5,7 +5,7 @@ import { Loading } from '@/components'
 import { orderApi } from '@/api'
 import { formatPriceYuan, formatDate, formatAddress, formatPhone } from '@/utils/format'
 import { PAGES, ORDER_STATUS_MAP, DELIVERY_TYPES, PLACEHOLDER_IMAGE } from '@/constants'
-import type { Order } from '@/types'
+import type { Order, OrderStatus } from '@/types'
 import './detail.scss'
 
 export default function OrderDetail() {
@@ -136,15 +136,24 @@ export default function OrderDetail() {
     )
   }
 
-  const statusInfo = ORDER_STATUS_MAP[order.status]
+  const displayStatus: OrderStatus | string = (order as any).display_status || (order as any).status
+  const displayStatusName =
+    (order as any).display_status_name ||
+    ORDER_STATUS_MAP[String(displayStatus)]?.text ||
+    String(displayStatus)
+
+  const payAmount = (order as any).final_amount ?? (order as any).pay_amount ?? 0
+  const freightAmount = (order as any).delivery_fee ?? (order as any).freight_amount ?? 0
+
+  const statusInfo = ORDER_STATUS_MAP[String(displayStatus)]
 
   return (
     <View className='order-detail'>
       <ScrollView scrollY className='order-detail__content'>
         {/* 订单状态 */}
         <View className='order-detail__status' style={{ backgroundColor: statusInfo?.color }}>
-          <Text className='order-detail__status-text'>{statusInfo?.text}</Text>
-          {order.status === 'pending_payment' && (
+          <Text className='order-detail__status-text'>{displayStatusName}</Text>
+          {displayStatus === 'pending_payment' && (
             <Text className='order-detail__status-tip'>请在30分钟内完成支付</Text>
           )}
         </View>
@@ -219,7 +228,7 @@ export default function OrderDetail() {
           <View className='order-detail__summary-row'>
             <Text className='order-detail__summary-label'>配送费</Text>
             <Text className='order-detail__summary-value'>
-              {order.freight_amount > 0 ? formatPriceYuan(order.freight_amount) : '免运费'}
+              {freightAmount > 0 ? formatPriceYuan(freightAmount) : '免运费'}
             </Text>
           </View>
           {order.discount_amount > 0 && (
@@ -233,7 +242,7 @@ export default function OrderDetail() {
           <View className='order-detail__summary-row order-detail__summary-row--total'>
             <Text className='order-detail__summary-label'>实付金额</Text>
             <Text className='order-detail__summary-value order-detail__summary-value--total'>
-              {formatPriceYuan(order.pay_amount)}
+              {formatPriceYuan(payAmount)}
             </Text>
           </View>
         </View>
@@ -276,12 +285,12 @@ export default function OrderDetail() {
       </ScrollView>
 
       {/* 底部操作栏 */}
-      {(order.status === 'pending_payment' ||
-        order.status === 'delivering' ||
-        order.status === 'pending_pickup' ||
-        order.status === 'pending_delivery') && (
+      {(displayStatus === 'pending_payment' ||
+        displayStatus === 'delivering' ||
+        displayStatus === 'pending_pickup' ||
+        displayStatus === 'pending_delivery') && (
         <View className='order-detail__footer'>
-          {order.status === 'pending_payment' && (
+          {displayStatus === 'pending_payment' && (
             <>
               <View className='order-detail__footer-btn order-detail__footer-btn--cancel' onClick={handleCancel}>
                 <Text className='order-detail__footer-btn-text'>取消订单</Text>
@@ -291,12 +300,12 @@ export default function OrderDetail() {
               </View>
             </>
           )}
-          {order.status === 'pending_delivery' && (
+          {displayStatus === 'pending_delivery' && (
             <View className='order-detail__footer-btn order-detail__footer-btn--refund' onClick={handleRefund}>
               <Text className='order-detail__footer-btn-text'>申请退款</Text>
             </View>
           )}
-          {(order.status === 'delivering' || order.status === 'pending_pickup') && (
+          {(displayStatus === 'delivering' || displayStatus === 'pending_pickup') && (
             <View className='order-detail__footer-btn order-detail__footer-btn--confirm' onClick={handleConfirm}>
               <Text className='order-detail__footer-btn-text'>确认收货</Text>
             </View>

@@ -6,7 +6,7 @@ import { orderApi } from '@/api'
 import { usePagination } from '@/hooks/useRequest'
 import { formatPriceYuan, formatDate } from '@/utils/format'
 import { PAGES, ORDER_STATUS_MAP, PLACEHOLDER_IMAGE } from '@/constants'
-import type { Order } from '@/types'
+import type { Order, OrderStatus } from '@/types'
 import './list.scss'
 
 const STATUS_TABS = [
@@ -47,6 +47,19 @@ export default function OrderList() {
   const handleTabChange = (value: string) => {
     setCurrentTab(value)
     loadOrders({ status: value || undefined })
+  }
+
+  const getDisplayStatus = (order: Order): OrderStatus | string => {
+    return (order as any).display_status || (order as any).status
+  }
+
+  const getDisplayStatusName = (order: Order) => {
+    const ds = getDisplayStatus(order)
+    return (order as any).display_status_name || ORDER_STATUS_MAP[String(ds)]?.text || String(ds)
+  }
+
+  const getPayAmount = (order: Order) => {
+    return (order as any).final_amount ?? (order as any).pay_amount ?? 0
   }
 
   const handleOrderClick = (order: Order) => {
@@ -166,9 +179,9 @@ export default function OrderList() {
                   <Text className='order-list__item-no'>订单号: {order.order_no}</Text>
                   <Text
                     className='order-list__item-status'
-                    style={{ color: ORDER_STATUS_MAP[order.status]?.color }}
+                    style={{ color: ORDER_STATUS_MAP[String(getDisplayStatus(order))]?.color }}
                   >
-                    {ORDER_STATUS_MAP[order.status]?.text}
+                    {getDisplayStatusName(order)}
                   </Text>
                 </View>
 
@@ -197,7 +210,7 @@ export default function OrderList() {
                   <View className='order-list__item-total'>
                     <Text className='order-list__item-total-label'>实付:</Text>
                     <Text className='order-list__item-total-price'>
-                      {formatPriceYuan(order.pay_amount)}
+                      {formatPriceYuan(getPayAmount(order))}
                     </Text>
                   </View>
                 </View>
@@ -207,7 +220,7 @@ export default function OrderList() {
                     {formatDate(order.created_at, 'YYYY-MM-DD HH:mm')}
                   </Text>
                   <View className='order-list__item-buttons'>
-                    {order.status === 'pending_payment' && (
+                    {getDisplayStatus(order) === 'pending_payment' && (
                       <>
                         <View
                           className='order-list__item-btn order-list__item-btn--cancel'
@@ -223,7 +236,8 @@ export default function OrderList() {
                         </View>
                       </>
                     )}
-                    {(order.status === 'delivering' || order.status === 'pending_pickup') && (
+                    {(getDisplayStatus(order) === 'delivering' ||
+                      getDisplayStatus(order) === 'pending_pickup') && (
                       <View
                         className='order-list__item-btn order-list__item-btn--confirm'
                         onClick={(e) => handleConfirm(order, e)}

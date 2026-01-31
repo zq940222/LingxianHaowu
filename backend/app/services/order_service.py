@@ -1,8 +1,8 @@
 """订单服务层"""
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 
 from app.models.order import Order, OrderItem, OrderLog
 from app.core.crud import CRUDBase
@@ -18,11 +18,32 @@ class CRUDOrder(CRUDBase[Order, OrderCreate, OrderUpdate]):
         self,
         db: AsyncSession,
         user_id: int,
-        status: Optional[str] = None,
+        status: Optional[Union[str, List[str]]] = None,
         skip: int = 0,
         limit: int = 100
     ):
-        """获取用户订单列表"""
+        """获取用户订单列表
+
+        支持：
+        - status=None：不筛选
+        - status="pending"：单状态
+        - status=["paid","preparing"]：多状态（IN 查询）
+        """
+        # 多状态：走手写查询（CRUDBase.get_multi 只支持等值过滤）
+        if isinstance(status, list):
+            query = select(self.model).where(self.model.user_id == user_id)
+            if status:
+                query = query.where(self.model.status.in_(status))
+
+            count_query = select(func.count()).select_from(query.subquery())
+            total = (await db.execute(count_query)).scalar() or 0
+
+            query = query.offset(skip).limit(limit)
+            result = await db.execute(query)
+            items = result.scalars().all()
+            return list(items), int(total)
+
+        # 单状态/不筛选：沿用通用 CRUD
         filters = {"user_id": user_id}
         if status:
             filters["status"] = status

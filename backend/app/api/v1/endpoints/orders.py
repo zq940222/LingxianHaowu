@@ -280,6 +280,43 @@ async def create_order(
     )
 
 
+def _map_front_status_to_backend(status: Optional[str]):
+    """前端聚合状态 -> 后端细粒度状态列表/单值
+
+    约定：
+    - pending_payment -> [pending]
+    - pending_delivery -> [paid, preparing, ready]
+    - delivering -> [delivering]
+    - completed -> [completed]
+    - cancelled -> [cancelled]
+    - refunding -> [refunding]
+    - refunded -> [refunded]
+
+    兼容：
+    - 传入细粒度状态则原样返回
+    - 传入逗号分隔则拆分为列表
+    """
+    if not status:
+        return None
+
+    s = status.strip()
+    if "," in s:
+        parts = [p.strip() for p in s.split(",") if p.strip()]
+        return parts or None
+
+    mapping = {
+        "pending_payment": ["pending"],
+        "pending_delivery": ["paid", "preparing", "ready"],
+        "delivering": ["delivering"],
+        "completed": ["completed"],
+        "cancelled": ["cancelled"],
+        "refunding": ["refunding"],
+        "refunded": ["refunded"],
+    }
+
+    return mapping.get(s, s)
+
+
 @router.get("/")
 async def get_orders(
     status: Optional[str] = None,
@@ -301,8 +338,10 @@ async def get_orders(
     """
     skip = (page - 1) * size
 
+    backend_status = _map_front_status_to_backend(status)
+
     items, total = await order.get_user_orders(
-        db, user_id=current_user_id, status=status, skip=skip, limit=size
+        db, user_id=current_user_id, status=backend_status, skip=skip, limit=size
     )
 
     return success_response(

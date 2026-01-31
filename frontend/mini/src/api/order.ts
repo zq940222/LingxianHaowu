@@ -36,7 +36,7 @@ export function createOrder(data: {
  */
 export function getOrderList(params: {
   page?: number
-  page_size?: number
+  size?: number
   status?: string
 }) {
   return get<PaginatedData<Order>>('/orders', params)

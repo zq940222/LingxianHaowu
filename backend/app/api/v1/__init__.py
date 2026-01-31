@@ -13,7 +13,8 @@ from app.api.v1.endpoints import (
     delivery,
     points,
     activities,
-    messages
+    messages,
+    upload
 )
 
 # 创建v1路由
@@ -30,3 +31,4 @@ api_v1_router.include_router(delivery.router, prefix="/delivery", tags=["配送"
 api_v1_router.include_router(points.router, prefix="/points", tags=["积分"])
 api_v1_router.include_router(activities.router, prefix="/activities", tags=["活动"])
 api_v1_router.include_router(messages.router, prefix="/messages", tags=["消息"])
+api_v1_router.include_router(upload.router, tags=["上传"])

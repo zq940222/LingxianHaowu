@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "minioadmin123"
     MINIO_BUCKET: str = "lingxian-haowu"
     MINIO_SECURE: bool = False
-    MINIO_INTERNAL_ENDPOINT: str = "http://minio:9000"  # Docker内部访问
+    # Docker内部访问（注意：Minio SDK endpoint 不带 http(s):// 前缀）
+    MINIO_INTERNAL_ENDPOINT: str = "minio:9000"
 
     # 服务配置
     API_HOST: str = "0.0.0.0"

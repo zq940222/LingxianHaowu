@@ -8,6 +8,8 @@ from datetime import timedelta
 from typing import Optional, List
 import uuid
 import os
+import io
+import json
 
 from app.core.config import settings
 from app.core.logger import logger
@@ -32,6 +34,7 @@ class MinIOStorage:
         try:
             # 优先使用内部endpoint（Docker环境）
             endpoint = self.internal_endpoint if os.environ.get('DOCKER_ENV') else self.endpoint
+            endpoint = endpoint.replace('http://', '').replace('https://', '')
 
             self._client = Minio(
                 endpoint,
@@ -65,7 +68,7 @@ class MinIOStorage:
                         }
                     ]
                 }
-                self._client.set_bucket_policy(self.bucket_name, policy)
+                self._client.set_bucket_policy(self.bucket_name, json.dumps(policy))
                 logger.info(f"创建bucket: {self.bucket_name}")
         except Exception as e:
             logger.error(f"创建bucket失败: {str(e)}")
@@ -97,20 +100,21 @@ class MinIOStorage:
             # 构建对象名称
             object_name = f"{folder}/{filename}" if folder else filename
 
-            # 读取文件内容
+            # 读取文件内容（Minio SDK 需要 file-like 对象）
             file_content = await file.read()
             file_size = len(file_content)
+            data_stream = io.BytesIO(file_content)
 
             # 上传文件
             self._client.put_object(
                 bucket_name=self.bucket_name,
                 object_name=object_name,
-                data=file_content,
+                data=data_stream,
                 length=file_size,
-                content_type=file.content_type
+                content_type=file.content_type or "application/octet-stream"
             )
 
-            # 返回访问URL
+            # 返回访问URL（外部访问）
             file_url = f"http://{self.endpoint}/{self.bucket_name}/{object_name}"
             logger.info(f"文件上传成功: {object_name}")
             return file_url
@@ -145,11 +149,13 @@ class MinIOStorage:
             # 构建对象名称
             object_name = f"{folder}/{filename}" if folder else filename
 
+            data_stream = io.BytesIO(data)
+
             # 上传数据
             self._client.put_object(
                 bucket_name=self.bucket_name,
                 object_name=object_name,
-                data=data,
+                data=data_stream,
                 length=len(data),
                 content_type=content_type
             )

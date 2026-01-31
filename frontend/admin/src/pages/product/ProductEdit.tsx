@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Form, Input, InputNumber, Select, Switch, Button, Card, Space, Upload, message, Spin } from 'antd'
+import type { UploadRequestOption } from 'rc-upload/lib/interface'
+import axios from 'axios'
 import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd'
 import { productApi } from '@/api'
@@ -68,6 +70,33 @@ export default function ProductEdit() {
       message.error('获取商品详情失败')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const uploadToServer = async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const token = localStorage.getItem('admin_token')
+
+    const res = await axios.post('/api/v1/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+
+    return res.data?.data
+  }
+
+  const makeCustomRequest = () => async (options: UploadRequestOption) => {
+    const { file, onSuccess, onError } = options
+    try {
+      const data = await uploadToServer(file as File)
+      // 统一返回 {url}
+      onSuccess?.(data, new XMLHttpRequest())
+    } catch (e) {
+      onError?.(e as any)
     }
   }
 
@@ -215,7 +244,7 @@ export default function ProductEdit() {
               fileList={coverFileList}
               maxCount={1}
               onChange={({ fileList }) => setCoverFileList(fileList)}
-              beforeUpload={() => false}
+              customRequest={makeCustomRequest()}
             >
               {coverFileList.length === 0 && (
                 <div>
@@ -233,7 +262,7 @@ export default function ProductEdit() {
               maxCount={9}
               multiple
               onChange={({ fileList }) => setImagesFileList(fileList)}
-              beforeUpload={() => false}
+              customRequest={makeCustomRequest()}
             >
               {imagesFileList.length < 9 && (
                 <div>

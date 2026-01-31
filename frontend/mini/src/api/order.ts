@@ -164,6 +164,8 @@ export function createPayment(orderId: number) {
     return {
       appId: '',
       ...res.payment_params,
+      // 透出 payment_id，便于后续查支付状态
+      payment_id: res.payment_id,
     }
   })
 }
@@ -171,7 +173,15 @@ export function createPayment(orderId: number) {
 /**
  * 查询支付状态
  */
-export function getPaymentStatus(orderId: number) {
-  // 暂无后端对应订单支付状态接口，后续统一为 /payments/{id}/status 或 /orders/{id}
-  return get<{ paid: boolean; status: string }>(`/orders/${orderId}/payment-status`)
+export function getPaymentStatus(paymentId: number) {
+  // 后端已提供：GET /payments/{payment_id}/status
+  return get<{
+    payment_id: number
+    order_id: number
+    status: string
+    status_name: string
+    amount: number
+    transaction_id?: string
+    paid_at?: string
+  }>(`/payments/${paymentId}/status`)
 }

@@ -60,7 +60,19 @@ class CRUDPayment(CRUDBase[Payment, PaymentCreate, PaymentUpdate]):
         refund_amount: float,
         refund_reason: str
     ) -> Payment:
-        """处理退款"""
+        """处理退款（简化版）
+
+        当前未接入真实第三方退款回调：
+        - 先标记 refunding
+        - 立即标记 refunded
+
+        后续接入真实回调后，可保留 refunding 状态等待异步更新。
+        """
+        payment.status = "refunding"
+        db.add(payment)
+        await db.commit()
+        await db.refresh(payment)
+
         payment.status = "refunded"
         payment.refund_amount = refund_amount
         payment.refund_reason = refund_reason

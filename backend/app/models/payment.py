@@ -15,7 +15,7 @@ class Payment(TimestampMixin):
     prepay_id = Column(String(64), comment="预支付ID")
     amount = Column(DECIMAL(10, 2), nullable=False, comment="支付金额")
     status = Column(SQLEnum(
-        'pending', 'paid', 'refunded', 'failed', 'cancelled',
+        'pending', 'paid', 'refunding', 'refunded', 'failed', 'cancelled',
         name='payment_status'
     ), default='pending', nullable=False, comment="支付状态")
     paid_at = Column(DateTime, comment="支付时间")

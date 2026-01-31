@@ -18,7 +18,7 @@ from app.services.delivery_service import delivery_zone
 from app.services.points_service import point_rule
 from app.models.order import Order
 from app.models.product import Product
-from app.schemas.order import OrderCreate, OrderItemCreate, OrderUpdate, OrderDetailResponse
+from app.schemas.order import OrderCreate, OrderItemCreate, OrderUpdate, OrderDetailResponse, OrderResponse
 
 router = APIRouter()
 
@@ -52,6 +52,12 @@ class OrderUpdateStatusRequest(BaseModel):
     """更新订单状态请求"""
     status: str
     remark: Optional[str] = None
+
+
+class OrderRefundRequest(BaseModel):
+    """用户申请退款（简化版）"""
+    reason: str
+    description: Optional[str] = None
 
 
 class OrderPreviewRequest(BaseModel):
@@ -280,6 +286,46 @@ async def create_order(
     )
 
 
+def _map_backend_status_to_front(status: str) -> str:
+    """后端细粒度状态 -> 前端聚合展示状态"""
+    if status == "pending":
+        return "pending_payment"
+    if status in ("paid", "preparing", "ready"):
+        return "pending_delivery"
+    if status == "delivering":
+        return "delivering"
+    if status == "completed":
+        return "completed"
+    if status == "cancelled":
+        return "cancelled"
+    if status == "refunding":
+        return "refunding"
+    if status == "refunded":
+        return "refunded"
+    return status
+
+
+def _front_status_name(display_status: str) -> str:
+    mapping = {
+        "pending_payment": "待支付",
+        "pending_delivery": "待配送",
+        "delivering": "配送中",
+        "completed": "已完成",
+        "cancelled": "已取消",
+        "refunding": "退款中",
+        "refunded": "已退款",
+    }
+    return mapping.get(display_status, display_status)
+
+
+def _serialize_order_with_display(order_obj: Order) -> dict:
+    data = OrderResponse.model_validate(order_obj).model_dump()
+    display_status = _map_backend_status_to_front(order_obj.status)
+    data["display_status"] = display_status
+    data["display_status_name"] = _front_status_name(display_status)
+    return data
+
+
 def _map_front_status_to_backend(status: Optional[str]):
     """前端聚合状态 -> 后端细粒度状态列表/单值
 
@@ -346,7 +392,7 @@ async def get_orders(
 
     return success_response(
         data={
-            "items": items,
+            "items": [_serialize_order_with_display(o) for o in items],
             "total": total,
             "page": page,
             "size": size,
@@ -385,7 +431,7 @@ async def get_order_detail(
 
     return success_response(
         data={
-            "order": order_obj,
+            "order": _serialize_order_with_display(order_obj),
             "items": items,
             "logs": logs
         }
@@ -434,6 +480,61 @@ async def cancel_order(
     await db.commit()
 
     return success_response(message="订单已取消")
+
+
+@router.post("/{order_id}/refund")
+async def request_refund(
+    order_id: int,
+    request: OrderRefundRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user_id: int = Depends(get_current_user_id)
+):
+    """用户申请退款（简化版）
+
+    说明：当前项目未对接真实微信退款流程，这里按“申请->立即退款成功”模拟。
+    后续接入真实退款后，可保留 order.status=refunding，等待回调变更为 refunded。
+    """
+    from app.services.payment_service import payment as payment_service
+
+    order_obj = await order.get(db, order_id)
+    if not order_obj:
+        return error_response(message="订单不存在")
+
+    if order_obj.user_id != current_user_id:
+        return error_response(message="无权限操作此订单")
+
+    if order_obj.status not in ["paid", "preparing", "ready", "delivering", "completed"]:
+        return error_response(message="当前订单状态不允许退款")
+
+    payment_obj = await payment_service.get_by_field(db, field_name="order_id", field_value=order_id)
+    if not payment_obj:
+        return error_response(message="支付记录不存在")
+
+    if payment_obj.status != "paid":
+        return error_response(message="当前支付状态不允许退款")
+
+    # 1) 先进入退款中
+    await order.update_order_status(
+        db, order_obj, "refunding", operator="用户", remark=f"申请退款: {request.reason}"
+    )
+
+    # 2) 立即退款成功（模拟）
+    refund_amount = float(payment_obj.amount)
+    await payment_service.refund(db, payment_obj, refund_amount, request.reason)
+    await order.update_order_status(
+        db, order_obj, "refunded", operator="系统", remark=f"退款成功: {request.reason}"
+    )
+
+    # 3) 恢复库存
+    items, _ = await order_item.get_order_items(db, order_id)
+    for item in items:
+        prod = await product_service.get(db, item.product_id)
+        if prod:
+            prod.stock += item.quantity
+            db.add(prod)
+    await db.commit()
+
+    return success_response(message="退款申请已提交")
 
 
 @router.post("/{order_id}/confirm")
@@ -557,7 +658,7 @@ async def get_all_orders(
 
     return success_response(
         data={
-            "items": items,
+            "items": [_serialize_order_with_display(o) for o in items],
             "total": total,
             "page": page,
             "size": size,
@@ -573,23 +674,35 @@ async def update_order_status(
     db: AsyncSession = Depends(get_db),
     admin_id: int = Depends(get_admin_id)
 ):
-    """
-    更新订单状态（管理员）
+    """更新订单状态（管理员）
 
-    Args:
-        order_id: 订单ID
-        request: 状态更新请求
-
-    Returns:
-        dict
+    这里做一个最小可用的状态机校验，避免状态随意跳转。
     """
     order_obj = await order.get(db, order_id)
     if not order_obj:
         return error_response(message="订单不存在")
 
-    # 更新订单状态
+    current = order_obj.status
+    target = request.status
+
+    allowed_next = {
+        "pending": ["cancelled"],
+        "paid": ["preparing", "cancelled", "refunding", "refunded"],
+        "preparing": ["ready", "refunding", "refunded"],
+        "ready": ["delivering", "refunding", "refunded"],
+        "delivering": ["completed", "refunding", "refunded"],
+        "completed": ["refunding", "refunded"],
+        "refunding": ["refunded"],
+        "refunded": [],
+        "cancelled": [],
+    }
+
+    if target != current:
+        if target not in allowed_next.get(current, []):
+            return error_response(message=f"状态不允许从 {current} 变更为 {target}")
+
     await order.update_order_status(
-        db, order_obj, request.status, operator="管理员", remark=request.remark
+        db, order_obj, target, operator="管理员", remark=request.remark
     )
 
     return success_response(message="订单状态已更新")

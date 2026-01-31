@@ -17,7 +17,7 @@ class Order(TimestampMixin):
     delivery_fee = Column(DECIMAL(10, 2), default=0.00, comment="配送费")
     final_amount = Column(DECIMAL(10, 2), nullable=False, comment="实付金额")
     status = Column(SQLEnum(
-        'pending', 'paid', 'preparing', 'ready', 'delivering', 'completed', 'cancelled', 'refunded',
+        'pending', 'paid', 'preparing', 'ready', 'delivering', 'completed', 'cancelled', 'refunding', 'refunded',
         name='order_status'
     ), default='pending', nullable=False, comment="订单状态")
     delivery_type = Column(Integer, nullable=False, comment="配送方式 1-配送 2-自提")
